@@ -2921,6 +2921,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "infinity-provider-groq"
+version = "0.2.0"
+dependencies = [
+ "infinity-provider-openrouter",
+ "tokio",
+]
+
+[[package]]
+name = "infinity-provider-openrouter"
+version = "0.2.0"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "eventsource-stream",
+ "futures-util",
+ "infinity-provider-protocol",
+ "reqwest",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "infinity-provider-protocol"
 version = "0.2.0"
 dependencies = [

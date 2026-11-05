@@ -19,6 +19,8 @@ members = [
     "crates/infinity-daemon",
     "crates/infinity-provider-bedrock",
     "crates/infinity-provider-rig",
+    "crates/infinity-provider-openrouter",
+    "crates/infinity-provider-groq",
     "crates/infinity-slack-bot",
     "crates/infinity-slack-dataflow",
 ]

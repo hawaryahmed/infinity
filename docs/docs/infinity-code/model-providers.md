@@ -25,6 +25,79 @@ infinity provider install bedrock --crate infinity-provider-bedrock
 
 `infinity-provider-bedrock` serves the Claude models available on AWS Bedrock. It uses your ambient AWS configuration through the standard SDK credential chain (`AWS_PROFILE`, environment variables, SSO, instance profiles), and requires Bedrock model access to be enabled on the account.
 
+### The OpenRouter and Groq providers
+
+`infinity-provider-openrouter` calls OpenRouter directly.
+`infinity-provider-groq` calls Groq directly, with a separate API key and model list.
+Both can be installed together. From the repository root:
+
+```bash
+infinity provider install openrouter --crate infinity-provider-openrouter --path "$(pwd)/crates/infinity-provider-openrouter"
+infinity provider install groq --crate infinity-provider-groq --path "$(pwd)/crates/infinity-provider-groq"
+```
+
+These commands install from the local checkout; they do not require the crates to
+have been published. Keep the checkout at a stable path for provider updates.
+
+Export configuration in the environment that starts the daemon:
+
+```bash
+export OPENROUTER_API_KEY='your-openrouter-key'
+export OPENROUTER_MODELS='anthropic/claude-sonnet-4.6'
+export GROQ_API_KEY='your-groq-key'
+export GROQ_MODELS='openai/gpt-oss-20b,openai/gpt-oss-120b'
+infinity daemon restart
+```
+
+Configure only the providers you install. Each registered provider must start
+successfully, so an unconfigured provider can prevent daemon startup. For a
+service-managed daemon, set these variables in the service environment. Avoid
+storing keys in source control or `providers.json`.
+
+Model lists are comma-separated, preserve order, and use the backend's exact IDs.
+The first valid entry is that provider's default; duplicate IDs are removed.
+Both providers fetch model availability and context windows at startup. Invalid
+individual entries are logged to stderr and skipped; if none remain, startup
+fails with a diagnostic. Catalog/authentication/network failures also fail startup.
+
+| Provider | Key | Model list | Optional timeout |
+| --- | --- | --- | --- |
+| OpenRouter | `OPENROUTER_API_KEY` | `OPENROUTER_MODELS` | `OPENROUTER_TIMEOUT_SECS` |
+| Groq | `GROQ_API_KEY` | `GROQ_MODELS` | `GROQ_TIMEOUT_SECS` |
+
+Timeouts default to 120 seconds and must be positive. They bound response-header
+waiting and each SSE event, rather than the whole completion.
+
+OpenRouter models must advertise tool support in its catalog. Groq's catalog does
+not advertise tool capability; the adapter maintains a reviewed list of supported
+chat models and output limits, while checking availability and context windows
+against the live catalog. The current Groq list includes `openai/gpt-oss-20b`,
+`openai/gpt-oss-120b`, `openai/gpt-oss-safeguard-20b`, `llama-3.3-70b-versatile`,
+`llama-3.1-8b-instant`, `qwen/qwen3.8-27b`, `minimaxai/minimax-m2.7`, and
+`meta-models/muse-spark-open`. Account access and model availability may differ.
+Speech and embedding models cannot serve the coding agent.
+
+Both adapters support streaming text, reasoning deltas, tool-call/result history,
+and token accounting. Complete tool calls are emitted after the stream ends;
+incremental tool-call UI deltas are not emitted. Groq input is currently text-only;
+the runtime substitutes image placeholders. OpenRouter supports image input when
+the selected model advertises it and preserves opaque reasoning details across
+turns. Groq does not replay OpenRouter-specific reasoning history.
+
+Backend-native options can be passed through `CompletionRequest.additional_params`.
+For Groq GPT-OSS, use `reasoning_effort` and `include_reasoning`; `reasoning_format`
+is unsupported. For OpenRouter, use its `reasoning` and `provider` options.
+Protocol-owned model, messages, tools, streaming, and token-limit fields cannot be
+overridden. GPT-OSS defaults to nonparallel tool calls on Groq.
+
+To diagnose a startup failure, run `infinity-provider-openrouter` or
+`infinity-provider-groq` directly. On success it prints the socket path and waits;
+stop the diagnostic process before starting Infinity normally.
+
+See the [OpenRouter model catalog](https://openrouter.ai/models),
+[Groq models](https://console.groq.com/docs/models), and
+[Groq tool support](https://console.groq.com/docs/tool-use/overview) for backend details.
+
 ## Configuration
 
 Providers live in `~/.infinity/providers.json`, a JSON object mapping provider id to its configuration:

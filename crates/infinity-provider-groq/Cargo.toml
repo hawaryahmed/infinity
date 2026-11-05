@@ -1,0 +1,15 @@
+[package]
+name = "infinity-provider-groq"
+publish = true
+version = "0.2.0"
+edition = "2024"
+repository = { workspace = true }
+license = "Apache-2.0"
+description = "Direct Groq model provider for Infinity agents."
+
+[dependencies]
+infinity-provider-openrouter = { path = "../infinity-provider-openrouter", version = "^0.2.0" }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[lints]
+workspace = true
